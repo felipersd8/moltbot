@@ -190,7 +190,15 @@ export function attachGatewayWsMessageHandler(params: {
   } = params;
 
   const configSnapshot = loadConfig();
-  const trustedProxies = configSnapshot.gateway?.trustedProxies ?? [];
+  const envTrustedProxies = (
+    process.env.GATEWAY_TRUSTED_PROXIES ??
+    process.env.CLAWDBOT_TRUSTED_PROXIES ??
+    ""
+  )
+    .split(",")
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0);
+  const trustedProxies = [...(configSnapshot.gateway?.trustedProxies ?? []), ...envTrustedProxies];
   const clientIp = resolveGatewayClientIp({ remoteAddr, forwardedFor, realIp, trustedProxies });
 
   // If proxy headers are present but the remote address isn't trusted, don't treat

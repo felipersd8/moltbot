@@ -116,9 +116,22 @@ export function connectGateway(host: GatewayHost) {
   host.execApprovalError = null;
 
   host.client?.stop();
+
+  const urlParams = new URLSearchParams(window.location.search);
+  const tokenFromUrl = urlParams.get("token") || urlParams.get("t");
+  const tokenFromWindow = (window as unknown as { __CLAWDBOT_GATEWAY_TOKEN__?: string })
+    .__CLAWDBOT_GATEWAY_TOKEN__;
+  const tokenFromEnv = import.meta.env.VITE_GATEWAY_TOKEN;
+
+  const resolvedToken =
+    tokenFromUrl?.trim() ||
+    tokenFromWindow?.trim() ||
+    tokenFromEnv?.trim() ||
+    host.settings.token.trim();
+
   host.client = new GatewayBrowserClient({
     url: host.settings.gatewayUrl,
-    token: host.settings.token.trim() ? host.settings.token : undefined,
+    token: resolvedToken || undefined,
     password: host.password.trim() ? host.password : undefined,
     clientName: "moltbot-control-ui",
     mode: "webchat",
