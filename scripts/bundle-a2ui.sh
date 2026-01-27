@@ -21,10 +21,23 @@ INPUT_PATHS=(
 collect_files() {
   local path
   for path in "${INPUT_PATHS[@]}"; do
-    if [[ -d "$path" ]]; then
-      find "$path" -type f -print0
+    if [[ -e "$path" ]]; then
+      if [[ -d "$path" ]]; then
+        find "$path" -type f -print0
+      else
+        printf '%s\0' "$path"
+      fi
     else
-      printf '%s\0' "$path"
+      echo "Warning: Path not found during hash computation: $path" >&2
+      # Optional: list parent directory to debug
+      local parent
+      parent="$(dirname "$path")"
+      if [[ -d "$parent" ]]; then
+        echo "Contents of parent directory $parent:" >&2
+        ls -la "$parent" >&2
+      else
+        echo "Parent directory also missing: $parent" >&2
+      fi
     fi
   done
 }
@@ -46,7 +59,13 @@ if [[ -f "$HASH_FILE" ]]; then
   fi
 fi
 
+# Ensure required commands are available
+if ! pnpm exec rolldown --version &> /dev/null; then
+  echo "Error: rolldown command not found via pnpm exec." >&2
+  exit 1
+fi
+
 pnpm -s exec tsc -p vendor/a2ui/renderers/lit/tsconfig.json
-rolldown -c apps/shared/ClawdbotKit/Tools/CanvasA2UI/rolldown.config.mjs
+pnpm exec rolldown -c apps/shared/ClawdbotKit/Tools/CanvasA2UI/rolldown.config.mjs
 
 echo "$current_hash" > "$HASH_FILE"
