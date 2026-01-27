@@ -149,6 +149,9 @@ export async function startGatewayServer(
   opts: GatewayServerOptions = {},
 ): Promise<GatewayServer> {
   // Ensure all default port derivations (browser/canvas) see the actual runtime port.
+  if (process.env.PORT) {
+    port = Number(process.env.PORT);
+  }
   process.env.CLAWDBOT_GATEWAY_PORT = String(port);
   logAcceptedEnvOption({
     key: "CLAWDBOT_RAW_STREAM",
@@ -239,7 +242,7 @@ export async function startGatewayServer(
     cfg: cfgAtStart,
     port,
     bind: opts.bind,
-    host: opts.host,
+    host: process.env.HOST ?? opts.host ?? "0.0.0.0",
     controlUiEnabled: opts.controlUiEnabled,
     openAiChatCompletionsEnabled: opts.openAiChatCompletionsEnabled,
     openResponsesEnabled: opts.openResponsesEnabled,
