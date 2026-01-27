@@ -4,11 +4,14 @@
   "type": "module",
   "description": "Moltbot core memory search plugin",
   "moltbot": {
-    "extensions": [
-      "./index.ts"
-    ]
+    "extensions": ["./index.ts"]
   },
   "peerDependencies": {
-    "moltbot": ">=2026.1.26"
+    "moltbot": "workspace:*"
+  },
+  "peerDependenciesMeta": {
+    "moltbot": {
+      "optional": true
+    }
   }
 }
