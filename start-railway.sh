@@ -28,16 +28,35 @@ fi
 STATE_DIR="/data"
 export CONFIG_FILE="$STATE_DIR/moltbot.json"
 
+# Garantir permissões no volume /data
+echo "🔧 Checking /data permissions..."
+if [ -w "$STATE_DIR" ]; then
+    echo "✅ /data is writable"
+else
+    echo "⚠️  /data is not writable, attempting to fix..."
+    chmod -R 777 "$STATE_DIR" 2>/dev/null || {
+        echo "❌ Cannot fix permissions (may need root). Continuing anyway..."
+    }
+fi
+
 echo "📝 Generating configuration using node script..."
 node /app/generate-config.cjs || {
     echo "❌ Config generation failed!"
     panic_sleep
 }
 
-# Criar diretórios necessários
-mkdir -p "$STATE_DIR/credentials"
-mkdir -p "$STATE_DIR/media"
-mkdir -p "$STATE_DIR/devices"
+# Criar diretórios necessários com permissões explícitas
+echo "📁 Creating state directories..."
+mkdir -p "$STATE_DIR/credentials" || panic_sleep
+mkdir -p "$STATE_DIR/media" || panic_sleep
+mkdir -p "$STATE_DIR/devices" || panic_sleep
+mkdir -p "$STATE_DIR/.clawdbot" || panic_sleep
+mkdir -p "$STATE_DIR/.moltbot" || panic_sleep
+
+# Garantir permissões de escrita
+chmod -R 755 "$STATE_DIR" 2>/dev/null || true
+
+echo "✅ State directories ready"
 
 echo "🚀 Starting Moltbot Gateway..."
 echo ""
