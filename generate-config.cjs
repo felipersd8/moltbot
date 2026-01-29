@@ -13,7 +13,9 @@ try {
       auth: {
         mode: 'token',
         token: process.env.GATEWAY_AUTH_TOKEN || 'changeme'
-      }
+      },
+      // Trust Railway's proxy network (100.64.0.0/10 - Carrier-grade NAT)
+      trustedProxies: ['100.64.0.0/10', '10.0.0.0/8']
     },
     channels: {
       whatsapp: {

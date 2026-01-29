@@ -52,5 +52,12 @@ ENV CLAWDBOT_STATE_DIR=/data
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD node -e "require('http').get('http://localhost:18789/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
+# Copy entrypoint wrapper that fixes volume permissions
+COPY entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
+
+# Set entrypoint to fix permissions before running app
+ENTRYPOINT ["/app/entrypoint.sh"]
+
 # Use startup script
 CMD ["/app/start-railway.sh"]
