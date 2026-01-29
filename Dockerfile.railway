@@ -1,0 +1,69 @@
+FROM node:22-bookworm AS builder
+
+# Install Bun (required for build scripts)
+RUN curl -fsSL https://bun.sh/install | bash
+ENV PATH="/root/.bun/bin:${PATH}"
+
+RUN corepack enable
+
+WORKDIR /app
+
+# Copy package files
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
+COPY ui/package.json ./ui/package.json
+COPY patches ./patches
+COPY scripts ./scripts
+
+# Install dependencies
+RUN pnpm install --frozen-lockfile
+
+# Copy source code
+COPY . .
+
+# Build application
+ENV NODE_OPTIONS="--max-old-space-size=300"
+RUN pnpm build
+
+# Force pnpm for UI build
+ENV CLAWDBOT_PREFER_PNPM=1
+RUN pnpm ui:install
+RUN pnpm ui:build
+
+# Verify build outputs
+RUN ls -la dist && ls -la ui/dist
+
+# Production stage
+FROM node:22-bookworm-slim
+
+WORKDIR /app
+
+# Install only production dependencies
+RUN corepack enable
+
+# Copy built application from builder
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/ui/dist ./ui/dist
+COPY --from=builder /app/skills ./skills
+COPY --from=builder /app/extensions ./extensions
+
+# Create directory for persistent data
+RUN mkdir -p /data
+
+# Copy startup script
+COPY start-railway.sh /app/start-railway.sh
+RUN chmod +x /app/start-railway.sh
+
+# Expose gateway port
+EXPOSE 18789
+
+ENV NODE_ENV=production
+ENV MOLTBOT_STATE_DIR=/data
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:18789/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
+
+# Use startup script
+CMD ["/app/start-railway.sh"]

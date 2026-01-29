@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  moltbot:
+    build:
+      context: .
+      dockerfile: Dockerfile.railway
+    container_name: moltbot-railway
+    ports:
+      - "18789:18789"
+    environment:
+      # AI Provider (escolha um)
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      # - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      
+      # AI Configuration
+      - AI_PROVIDER=openai  # ou: anthropic
+      - AI_MODEL=openai/gpt-4o  # ou: anthropic/claude-opus-4
+      
+      # Telegram
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      
+      # WhatsApp Configuration
+      - WHATSAPP_MESSAGE_PREFIX=[Meu Bot]
+      - WHATSAPP_ALLOWLIST=["*"]  # Ou lista específica: ["+5511999999999"]
+      
+      # Gateway Security
+      - GATEWAY_AUTH_TOKEN=${GATEWAY_AUTH_TOKEN:-changeme}
+      
+      # Port
+      - PORT=18789
+      
+    volumes:
+      # Persistent storage for credentials and data
+      - moltbot-data:/root/.clawdbot
+      
+    restart: unless-stopped
+    
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:18789/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  moltbot-data:
+    driver: local
